@@ -3,6 +3,7 @@ import { Request, Response } from "express";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import nodemailer from "nodemailer";
+import { OAuth2Client } from "google-auth-library"
 import User, { IUser } from "../models/user";
 import { Types } from "mongoose";
 
@@ -146,3 +147,66 @@ export const resetPassword = async (
       .json({ message: "Internal server error", error: error.message });
   }
 };
+
+export const googleSignIn = async (req: Request, res: Response): Promise<Response> => {
+  try {
+    const { tokenId } = req.body;
+
+    if (!tokenId) {
+      return res.status(400).json({ message: "Google token is required" });
+    }
+    const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+    // Verify Google token
+    const ticket = await client.verifyIdToken({
+      idToken: tokenId,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
+
+    const payload = ticket.getPayload();
+    if (!payload || !payload.email) {
+      return res.status(400).json({ message: "Invalid Google token" });
+    }
+
+    const { email, name, picture } = payload;
+
+    // Find user in DB
+    // let user = (await User.findOne({ email })) as IUser | null;
+    // let isNewUser = false;
+
+    // if (!user) {
+    //   // Create user if not exists
+    //   user = new User({
+    //     email,
+    //     // first_name: name?.split(" ")[0] || "",
+    //     // last_name: name?.split(" ")[1] || "",
+    //     profile_avtar: picture,
+    //     password: null, // Google users won’t have password
+    //   });
+    //   await user.save();
+    //   isNewUser = true;
+    // }
+
+    // // Create JWT
+    // const userId =
+      // user._id instanceof Types.ObjectId ? user._id.toString() : String(user._id);
+
+    const token = jwt.sign(
+      { email: email },
+      process.env.JWT_SECRET || "your_jwt_secret",
+      { expiresIn: "1h" }
+    );
+
+    return res.status(200).json({
+      // message: isNewUser
+      //   ? "User signed up with Google successfully"
+      //   : "User signed in with Google successfully",
+      token,
+    });
+  } catch (error: any) {
+    console.error("Google sign-in error:", error);
+    return res
+      .status(500)
+      .json({ message: "Internal server error", error: error.message });
+  }
+};
+

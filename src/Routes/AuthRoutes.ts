@@ -4,6 +4,7 @@ import {
   loginOrSignUp,
   forgotPassword,
   resetPassword,
+  googleSignIn,
 } from "../Controllers/AuthController";
 
 const router = Router();
@@ -11,5 +12,7 @@ const router = Router();
 router.post("/loginOrSignUp", loginOrSignUp);
 router.post("/forgot-password", forgotPassword);
 router.post("/reset-password", resetPassword);
+router.post("/google-SignIn",googleSignIn)
+
 
 export default router;

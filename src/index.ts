@@ -13,7 +13,7 @@ dotenv.config();
 const app = express();
 
 // Connect to MongoDB
-// connectDB();
+connectDB();
 
 // Middleware to parse JSON
 app.use(express.json());

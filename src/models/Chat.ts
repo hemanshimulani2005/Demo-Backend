@@ -73,6 +73,7 @@ interface IFeedback {
 
 export interface IChatMessage {
   _id: Types.ObjectId;
+  id?: string; // custom ID
   message?: string;
   avatar?: string | null;
   type: string;

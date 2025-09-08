@@ -3,7 +3,7 @@ import { Request, Response } from "express";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import nodemailer from "nodemailer";
-import { OAuth2Client } from "google-auth-library"
+import { OAuth2Client } from "google-auth-library";
 import User, { IUser } from "../models/user";
 import { Types } from "mongoose";
 
@@ -148,7 +148,10 @@ export const resetPassword = async (
   }
 };
 
-export const googleSignIn = async (req: Request, res: Response): Promise<Response> => {
+export const googleSignIn = async (
+  req: Request,
+  res: Response
+): Promise<Response> => {
   try {
     const { tokenId } = req.body;
 
@@ -170,25 +173,27 @@ export const googleSignIn = async (req: Request, res: Response): Promise<Respons
     const { email, name, picture } = payload;
 
     // Find user in DB
-    // let user = (await User.findOne({ email })) as IUser | null;
-    // let isNewUser = false;
+    let user = (await User.findOne({ email })) as IUser | null;
+    let isNewUser = false;
 
-    // if (!user) {
-    //   // Create user if not exists
-    //   user = new User({
-    //     email,
-    //     // first_name: name?.split(" ")[0] || "",
-    //     // last_name: name?.split(" ")[1] || "",
-    //     profile_avtar: picture,
-    //     password: null, // Google users won’t have password
-    //   });
-    //   await user.save();
-    //   isNewUser = true;
-    // }
+    if (!user) {
+      // Create user if not exists
+      user = new User({
+        email,
+        // first_name: name?.split(" ")[0] || "",
+        // last_name: name?.split(" ")[1] || "",
+        // profile_avtar: picture,
+        password: null, // Google users won’t have password
+      });
+      await user.save();
+      isNewUser = true;
+    }
 
-    // // Create JWT
-    // const userId =
-      // user._id instanceof Types.ObjectId ? user._id.toString() : String(user._id);
+    // Create JWT
+    const userId =
+      user._id instanceof Types.ObjectId
+        ? user._id.toString()
+        : String(user._id);
 
     const token = jwt.sign(
       { email: email },
@@ -197,9 +202,9 @@ export const googleSignIn = async (req: Request, res: Response): Promise<Respons
     );
 
     return res.status(200).json({
-      // message: isNewUser
-      //   ? "User signed up with Google successfully"
-      //   : "User signed in with Google successfully",
+      message: isNewUser
+        ? "User signed up with Google successfully"
+        : "User signed in with Google successfully",
       token,
     });
   } catch (error: any) {
@@ -209,4 +214,3 @@ export const googleSignIn = async (req: Request, res: Response): Promise<Respons
       .json({ message: "Internal server error", error: error.message });
   }
 };
-

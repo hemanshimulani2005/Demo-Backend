@@ -37,9 +37,15 @@ export const UpdateProfile = async (req: AuthRequest, res: Response) => {
       return res.status(404).json({ message: "User not found" });
     }
 
+    const avatarUrl = updatedUser.avatar
+      ? `${req.protocol}://${req.get("host")}/uploads/${updatedUser.avatar}`
+      : null;
     return res.status(200).json({
       message: "Profile updated successfully",
-      user: updatedUser,
+      user: {
+        ...updatedUser.toObject(),
+        avatar: avatarUrl,
+      },
     });
   } catch (err) {
     console.error("UpdateProfile error:", err);

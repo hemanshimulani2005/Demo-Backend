@@ -61,15 +61,15 @@ interface IFeedback {
   createdAt?: Date;
 }
 
-interface ICSSRS {
-  isCSSRS: boolean;
-  cssrs_id?: string;
-}
+// interface ICSSRS {
+//   isCSSRS: boolean;
+//   cssrs_id?: string;
+// }
 
-interface IPHQY {
-  isPHQY: boolean;
-  PHQ_Y_id?: string;
-}
+// interface IPHQY {
+//   isPHQY: boolean;
+//   PHQ_Y_id?: string;
+// }
 
 export interface IChatMessage {
   _id: Types.ObjectId;
@@ -89,8 +89,9 @@ export interface IChatMessage {
   feedback: IFeedback[];
   created_at?: Date;
   updated_at?: Date;
-  CSSRS?: ICSSRS;
-  PHQ_Y?: IPHQY;
+
+  // CSSRS?: ICSSRS;
+  // PHQ_Y?: IPHQY;
 }
 
 // ------------------- Chat Schema -------------------
@@ -119,39 +120,39 @@ const ChatSchema = new Schema<IChat>(
       required: true,
       ref: "User",
     },
-    category: { type: String },
+    // category: { type: String },
     title: { type: String },
     thread_id: { type: String },
-    phq_count: { type: Number, default: 0 },
-    risk_type: { type: String },
-    positive_count: { type: Number, default: 0 },
-    negative_count: { type: Number, default: 0 },
-    neutral_count: { type: Number, default: 0 },
-    cssrs_count: { type: Number, default: 0 },
+    // phq_count: { type: Number, default: 0 },
+    // risk_type: { type: String },
+    // positive_count: { type: Number, default: 0 },
+    // negative_count: { type: Number, default: 0 },
+    // neutral_count: { type: Number, default: 0 },
+    // cssrs_count: { type: Number, default: 0 },
     mode: { type: String },
     chats: [
       {
         message: { type: String },
-        avatar: { type: String, default: null },
+        // avatar: { type: String, default: null },
         type: { type: String, required: true },
         overview: { type: String },
         comments: [CommentSchema],
         new_thread: { type: Boolean, default: false },
-        category: { type: String },
+        // category: { type: String },
         response: { type: String },
         followup_questions: { type: [String], default: [] },
         scratchpad: {
           scratchpad_id: { type: String },
           scratchpadText: { type: String },
         },
-        categories: {
-          counselor_notes: { type: [String], default: [] },
-          tone: { type: String },
-          urgency_level: { type: String },
-          monitoring_state: { type: String },
-          emotional_state: { type: String },
-          issueCategory: { type: String },
-        },
+        // categories: {
+        //   counselor_notes: { type: [String], default: [] },
+        //   tone: { type: String },
+        //   urgency_level: { type: String },
+        //   monitoring_state: { type: String },
+        //   emotional_state: { type: String },
+        //   issueCategory: { type: String },
+        // },
         upvotes: [
           {
             userId: { type: String, ref: "User" },
@@ -175,16 +176,20 @@ const ChatSchema = new Schema<IChat>(
             createdAt: { type: Date, default: Date.now },
           },
         ],
+        action: {
+          type: String,
+          enum: ["upvote", "downvote"],
+        },
         created_at: { type: Date, default: Date.now },
         updated_at: { type: Date, default: Date.now },
-        CSSRS: {
-          isCSSRS: { type: Boolean, default: false },
-          cssrs_id: { type: String },
-        },
-        PHQ_Y: {
-          isPHQY: { type: Boolean, default: false },
-          PHQ_Y_id: { type: String },
-        },
+        // CSSRS: {
+        //   isCSSRS: { type: Boolean, default: false },
+        //   cssrs_id: { type: String },
+        // },
+        // PHQ_Y: {
+        //   isPHQY: { type: Boolean, default: false },
+        //   PHQ_Y_id: { type: String },
+        // },
       },
     ],
     depression_severity: { type: String },

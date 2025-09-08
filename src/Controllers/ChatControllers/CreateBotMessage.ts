@@ -3,12 +3,12 @@ import mongoose, { Types } from "mongoose";
 import Anthropic from "@anthropic-ai/sdk";
 import OpenAI from "openai";
 import { v4 as uuidv4 } from "uuid";
-import cssrslists from "../../models/CssrsList";
-import phqYList from "../../models/PhqYList";
+// import cssrslists from "../../models/CssrsList";
+// import phqYList from "../../models/PhqYList";
 import promptText from "../../models/PromptText";
 
 import { promptMessage, getOrCreateVectorStore } from "./PromptMassage";
-import { getAvatarInfo } from "./getAvatarInfo";
+// import { getAvatarInfo } from "./getAvatarInfo";
 
 import dotenv from "dotenv";
 dotenv.config();
@@ -42,7 +42,7 @@ interface IResponseData {
     mainContent: string;
     followup_questions?: any[];
   };
-  categories: ICategories;
+  // categories: ICategories;
 }
 
 // Initialize Anthropic client
@@ -70,30 +70,30 @@ let currentVectorStoreId: string | null;
 })();
 
 // Determine triggered assessments
-const determineTriggeredAssessments = (
-  emotionalState: string,
-  urgency: string,
-  responseType: IResponseType
-) => {
-  if (Object.keys(responseType).length === 0) {
-    return {
-      isCSSRSTrigger:
-        (emotionalState === "Self-Harm" || emotionalState === "Self Harm") &&
-        urgency === "Imminent",
-      isPHQYTrigger:
-        (urgency === "High" && emotionalState === "Self-Harm") ||
-        (urgency === "High" &&
-          ["Depression", "Anxiety", "Depression/Anxiety"].includes(
-            emotionalState
-          )),
-    };
-  }
+// const determineTriggeredAssessments = (
+//   emotionalState: string,
+//   urgency: string,
+//   responseType: IResponseType
+// ) => {
+//   if (Object.keys(responseType).length === 0) {
+//     return {
+//       isCSSRSTrigger:
+//         (emotionalState === "Self-Harm" || emotionalState === "Self Harm") &&
+//         urgency === "Imminent",
+//       isPHQYTrigger:
+//         (urgency === "High" && emotionalState === "Self-Harm") ||
+//         (urgency === "High" &&
+//           ["Depression", "Anxiety", "Depression/Anxiety"].includes(
+//             emotionalState
+//           )),
+//     };
+//   }
 
-  console.error(
-    "Error in determineTriggeredAssessments: responseType is not empty"
-  );
-  return { isCSSRSTrigger: false, isPHQYTrigger: false };
-};
+//   console.error(
+//     "Error in determineTriggeredAssessments: responseType is not empty"
+//   );
+//   return { isCSSRSTrigger: false, isPHQYTrigger: false };
+// };
 
 // Parse response data from raw string
 // const parseResponseData = (rawText: string): IResponseData => {
@@ -141,65 +141,65 @@ const parseResponseData = (rawText: string): IResponseData => {
         rawJSON?.followupQuestions ||
         [],
     },
-    categories: {
-      tone: rawJSON?.categories?.tone || "Neutral",
-      issuecategory: rawJSON?.categories?.issueCategory || "unknown",
-      emotionalstate: rawJSON?.categories?.emotionalState || "Others",
-      urgency: rawJSON?.categories?.urgency || "Low",
-      monitoringState: rawJSON?.categories?.monitoringState || "Low",
-      notes: rawJSON?.categories?.notes || [],
-    },
+    // categories: {
+    //   tone: rawJSON?.categories?.tone || "Neutral",
+    //   issuecategory: rawJSON?.categories?.issueCategory || "unknown",
+    //   emotionalstate: rawJSON?.categories?.emotionalState || "Others",
+    //   urgency: rawJSON?.categories?.urgency || "Low",
+    //   monitoringState: rawJSON?.categories?.monitoringState || "Low",
+    //   notes: rawJSON?.categories?.notes || [],
+    // },
   };
 };
 
 // Check CSSR/PHQY triggers
-const check_CSSR_PHQY = async (
-  responseData: IResponseData,
-  responseType: IResponseType,
-  threadId: string,
-  userId: string,
-  message_id: Types.ObjectId
-) => {
-  const { isCSSRSTrigger, isPHQYTrigger } = determineTriggeredAssessments(
-    responseData.categories.emotionalstate!,
-    responseData.categories.urgency!,
-    responseType
-  );
+// const check_CSSR_PHQY = async (
+//   responseData: IResponseData,
+//   responseType: IResponseType,
+//   threadId: string,
+//   userId: string,
+//   message_id: Types.ObjectId
+// ) => {
+//   const { isCSSRSTrigger, isPHQYTrigger } = determineTriggeredAssessments(
+//     responseData.categories.emotionalstate!,
+//     responseData.categories.urgency!,
+//     responseType
+//   );
 
-  const cssrs_id = uuidv4();
-  const PHQ_Y_id = uuidv4();
+//   const cssrs_id = uuidv4();
+//   const PHQ_Y_id = uuidv4();
 
-  if (isCSSRSTrigger) {
-    await cssrslists.create({
-      userId,
-      thread_id: threadId,
-      cssrs_id,
-      message_id,
-      created_at: new Date(),
-    });
-  }
+//   if (isCSSRSTrigger) {
+//     await cssrslists.create({
+//       userId,
+//       thread_id: threadId,
+//       cssrs_id,
+//       message_id,
+//       created_at: new Date(),
+//     });
+//   }
 
-  if (isPHQYTrigger) {
-    await phqYList.create({
-      userId,
-      thread_id: threadId,
-      PHQ_Y_id,
-      message_id,
-      created_at: new Date(),
-    });
-  }
+//   if (isPHQYTrigger) {
+//     await phqYList.create({
+//       userId,
+//       thread_id: threadId,
+//       PHQ_Y_id,
+//       message_id,
+//       created_at: new Date(),
+//     });
+//   }
 
-  return {
-    CSSRS: {
-      isCSSRS: isCSSRSTrigger,
-      ...(isCSSRSTrigger && { cssrs_id }),
-    },
-    PHQ_Y: {
-      isPHQY: isPHQYTrigger,
-      ...(isPHQYTrigger && { PHQ_Y_id }),
-    },
-  };
-};
+//   return {
+//     CSSRS: {
+//       isCSSRS: isCSSRSTrigger,
+//       ...(isCSSRSTrigger && { cssrs_id }),
+//     },
+//     PHQ_Y: {
+//       isPHQY: isPHQYTrigger,
+//       ...(isPHQYTrigger && { PHQ_Y_id }),
+//     },
+//   };
+// };
 
 // Create bot message
 // const createBotMessage = async (
@@ -322,16 +322,16 @@ const createBotMessage = async (
     const promptTextDoc = await promptText.findOne();
     if (!promptTextDoc) throw new Error("Prompt text not found in database");
 
-    if (avatar) {
-      const avatarInfo = getAvatarInfo(avatar);
-      if (
-        typeof avatarInfo === "string" &&
-        avatarInfo.includes("Avatar not found")
-      ) {
-        throw new Error(avatarInfo);
-      }
-      promptTextDoc.prompt += " \n" + avatarInfo;
-    }
+    // if (avatar) {
+    //   const avatarInfo = getAvatarInfo(avatar);
+    //   if (
+    //     typeof avatarInfo === "string" &&
+    //     avatarInfo.includes("Avatar not found")
+    //   ) {
+    //     throw new Error(avatarInfo);
+    //   }
+    //   promptTextDoc.prompt += " \n" + avatarInfo;
+    // }
 
     const prompts = await promptMessage(
       question,
@@ -380,13 +380,13 @@ const createBotMessage = async (
     if (!responseData)
       throw new Error("Failed to get response data from model");
 
-    const { CSSRS, PHQ_Y } = await check_CSSR_PHQY(
-      responseData,
-      responseType,
-      threadId,
-      userId,
-      message_id
-    );
+    // const { CSSRS, PHQ_Y } = await check_CSSR_PHQY(
+    //   responseData,
+    //   responseType,
+    //   threadId,
+    //   userId,
+    //   message_id
+    // );
 
     return {
       response: responseData.response.mainContent,
@@ -398,16 +398,16 @@ const createBotMessage = async (
         scratchpad_id: responseData.scratchpad.scratchpad_id,
         scratchpadText: responseData.scratchpad.scratchpadText,
       },
-      CSSRS,
-      PHQ_Y,
-      categories: {
-        counselor_notes: responseData.categories.notes || [],
-        tone: responseData.categories.tone || "",
-        urgency_level: responseData.categories.urgency || "",
-        monitoring_state: responseData.categories.monitoringState || "",
-        emotional_state: responseData.categories.emotionalstate || "",
-        issueCategory: responseData.categories.issuecategory || "unknown",
-      },
+      // CSSRS,
+      // PHQ_Y,
+      // categories: {
+      //   counselor_notes: responseData.categories.notes || [],
+      //   tone: responseData.categories.tone || "",
+      //   urgency_level: responseData.categories.urgency || "",
+      //   monitoring_state: responseData.categories.monitoringState || "",
+      //   emotional_state: responseData.categories.emotionalstate || "",
+      //   issueCategory: responseData.categories.issuecategory || "unknown",
+      // },
     };
   } catch (error) {
     console.error("Error in createBotMessage:", error);
@@ -415,4 +415,5 @@ const createBotMessage = async (
   }
 };
 
-export { createBotMessage, parseResponseData, check_CSSR_PHQY };
+export { createBotMessage, parseResponseData };
+//  check_CSSR_PHQY };

@@ -1,17 +1,15 @@
-// src/controllers/chatStreaming.ts
 import { Request, Response } from "express";
 import mongoose from "mongoose";
 import OpenAI from "openai";
 
 import Chat from "../../models/Chat";
-import Scratchpad from "../../models/Scratchpad";
 import User from "../../models/user";
 import promptText from "../../models/PromptText";
 
 import { validateChatRequest } from "../../Validations/ChatValidation";
-import { getAvatarInfo } from "./getAvatarInfo";
 import { promptMessage, getOrCreateVectorStore } from "./PromptMassage";
-import { parseResponseData, check_CSSR_PHQY } from "./CreateBotMessage";
+import { parseResponseData } from "./CreateBotMessage";
+import { AuthRequest } from "../../Middleware/AuthMiddleware"; // 👈 use extended type
 
 import dotenv from "dotenv";
 dotenv.config();
@@ -23,21 +21,17 @@ let currentVectorStoreId: string | null;
   currentVectorStoreId = await getOrCreateVectorStore();
 })();
 
-// Define request body type
 interface IChatRequestBody {
-  userId: string;
   threadId: string;
-  avatar?: string;
   question?: string;
   answer?: string;
   regenerate?: boolean;
-  is_scratchpad?: boolean;
   responseType: Record<string, any>;
   mode?: string;
 }
 
 export const chatStreaming = async (
-  req: Request<{}, {}, IChatRequestBody>,
+  req: AuthRequest, // 👈 use AuthRequest
   res: Response
 ) => {
   try {
@@ -45,16 +39,16 @@ export const chatStreaming = async (
     if (error) return res.status(400).json({ error: error.details[0].message });
 
     const {
-      userId,
       threadId,
-      avatar,
       question,
       answer,
       regenerate = false,
-      is_scratchpad = false,
       responseType,
       mode: rawMode,
     } = req.body;
+
+    // const userId = req.user.userId; // 👈 take from token
+    // if (!userId) return res.status(401).json({ error: "Unauthorized" });
 
     const mode = rawMode?.toLowerCase();
 
@@ -66,7 +60,7 @@ export const chatStreaming = async (
     }
 
     const [users, chat] = await Promise.all([
-      User.findOne({ user_id: userId }),
+      User.findById(req.user!.userId), // ✅ use _id
       Chat.findOne({ thread_id: threadId }),
     ]);
 
@@ -75,7 +69,6 @@ export const chatStreaming = async (
 
     const userMessage = {
       message: question,
-      avatar,
       type: "user",
       _id: new mongoose.Types.ObjectId(),
       created_at: new Date(),
@@ -92,16 +85,10 @@ export const chatStreaming = async (
             }
           : []
       )
-      .slice(-8);
+      .slice(-20);
 
     const promptTextDoc = await promptText.findOne();
     if (!promptTextDoc) throw new Error("Prompt text not found in database");
-
-    if (avatar) {
-      const avatarInfo = getAvatarInfo(avatar);
-      if (avatarInfo.includes("Avatar not found")) throw new Error(avatarInfo);
-      promptTextDoc.prompt += " \n" + avatarInfo;
-    }
 
     res.writeHead(200, {
       "Content-Type": "text/event-stream",
@@ -162,33 +149,18 @@ export const chatStreaming = async (
         }
 
         case "response.completed": {
-          const completedText = (event?.response?.output[0]?.content[0]?.text ||
-            "") as string;
+          const completedText =
+            (event?.response?.output[0]?.content[0]?.text as string) || "";
           const responseData = parseResponseData(completedText);
 
           const message_id = new mongoose.Types.ObjectId();
-          const { CSSRS, PHQ_Y } = await check_CSSR_PHQY(
-            responseData,
-            responseType,
-            threadId,
-            userId,
-            message_id
-          );
 
           const botMessage = {
             response: responseData.response?.mainContent || "",
             followup_questions: responseData.response?.followup_questions || [],
-            avatar,
             type: "bot",
             _id: message_id,
-            scratchpad: {
-              scratchpad_id: responseData.scratchpad?.scratchpad_id || "",
-              scratchpadText: responseData.scratchpad?.scratchpadText || "",
-            },
-            CSSRS,
-            PHQ_Y,
             categories: {
-              counselor_notes: responseData.categories?.notes || [],
               tone: responseData.categories?.tone || "",
               urgency_level: responseData.categories?.urgency || "",
               monitoring_state: responseData.categories?.monitoringState || "",
@@ -198,25 +170,54 @@ export const chatStreaming = async (
             },
           };
 
-          const scratchpad = {
-            userId,
-            thread_id: threadId,
-            scratchpad_id: botMessage.scratchpad?.scratchpad_id,
-            message_id: botMessage._id,
-            created_at: new Date(),
-          };
-          await Scratchpad.create(scratchpad);
+          // if (Object.keys(responseType).length !== 0 || regenerate) {
+          //   chat.chats.push(botMessage as any);
+          // } else {
+          //   chat.chats.push(userMessage as any, botMessage as any);
+          // }
 
-          if (Object.keys(responseType).length !== 0 || regenerate) {
+          // chat.mode = mode;
+          // await chat.save();
+          // await User.findOneAndUpdate(
+          //   { user_id: req.user!.userId },
+          //   { $set: { updated_at: new Date() } }
+          // );
+          // if (regenerate) {
+          //   // Find the last bot message in the chat and replace it
+          //   for (let i = chat.chats.length - 1; i >= 0; i--) {
+          //     if (chat.chats[i].type === "bot") {
+          //       chat.chats[i] = botMessage as any;
+          //       break;
+          //     }
+          //   }
+          // } else if (Object.keys(responseType).length !== 0) {
+          //   chat.chats.push(botMessage as any);
+          // } else {
+          //   chat.chats.push(userMessage as any, botMessage as any);
+          // }
+          if (regenerate && req.body.botId) {
+            // Replace the specific bot message
+            const index = chat.chats.findIndex(
+              (m) => m.type === "bot" && m._id.toString() === req.body.botId
+            );
+            if (index !== -1) {
+              chat.chats[index] = botMessage as any;
+            } else {
+              // fallback: append if botId not found
+              chat.chats.push(botMessage as any);
+            }
+          } else if (Object.keys(responseType).length !== 0) {
+            // Only bot message (no new user message)
             chat.chats.push(botMessage as any);
           } else {
+            // New user message + bot message
             chat.chats.push(userMessage as any, botMessage as any);
           }
 
           chat.mode = mode;
           await chat.save();
           await User.findOneAndUpdate(
-            { user_id: userId },
+            { user_id: req.user!.userId },
             { $set: { updated_at: new Date() } }
           );
 
@@ -224,12 +225,10 @@ export const chatStreaming = async (
             `data: ${JSON.stringify({ type: "end", content: botMessage })}\n\n`
           );
           res.end();
-          console.log("Stream ended successfully.");
           break;
         }
 
         case "response.failed": {
-          console.error("API stream error:", event.response.error.message);
           res.write(
             `data: ${JSON.stringify({
               type: "error",
@@ -241,16 +240,33 @@ export const chatStreaming = async (
           res.end();
           break;
         }
-
-        default:
-          break;
       }
     }
   } catch (error: any) {
     console.error(error);
-    res.status(500).json({
-      error: "Failed to process chat message.",
-      details: error?.message || error,
-    });
+
+    if (res.headersSent) {
+      // already streaming → send error as SSE
+      res.write(
+        `data: ${JSON.stringify({
+          type: "error",
+          content: error?.message || "An error occurred.",
+        })}\n\n`
+      );
+      res.end();
+    } else {
+      // normal error response
+      res.status(500).json({
+        error: "Failed to process chat message.",
+        details: error?.message || error,
+      });
+    }
   }
+
+  // } catch (error: any) {
+  //   res.status(500).json({
+  //     error: "Failed to process chat message.",
+  //     details: error?.message || error,
+  //   });
+  // }
 };

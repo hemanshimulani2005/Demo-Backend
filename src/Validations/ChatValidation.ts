@@ -2,7 +2,8 @@ import Joi, { ObjectSchema, ValidationResult } from "joi";
 
 // ------------------ Chat Schema ------------------
 const chatSchema: ObjectSchema = Joi.object({
-  userId: Joi.string().required(),
+  // userId: Joi.string().required(),
+  botId: Joi.string().optional(),
   threadId: Joi.string().required(),
   mode: Joi.string().required(),
   responseType: Joi.object().required(),

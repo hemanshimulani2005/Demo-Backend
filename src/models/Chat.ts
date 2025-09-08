@@ -72,6 +72,7 @@ interface IPHQY {
 }
 
 export interface IChatMessage {
+  _id: Types.ObjectId;
   message?: string;
   avatar?: string | null;
   type: string;

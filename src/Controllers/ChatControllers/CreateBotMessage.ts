@@ -96,17 +96,50 @@ const determineTriggeredAssessments = (
 };
 
 // Parse response data from raw string
+// const parseResponseData = (rawText: string): IResponseData => {
+//   const rawJSON = JSON.parse(rawText.replace("```json", "").replace("```", ""));
+
+//   return {
+//     scratchpad: {
+//       scratchpad_id: uuidv4(),
+//       scratchpadText: rawJSON?.scratchpadText?.trim() || "",
+//     },
+//     response: {
+//       mainContent: rawJSON?.response?.trim() || "",
+//       followup_questions: rawJSON?.followupQuestions,
+//     },
+//     categories: {
+//       tone: rawJSON?.categories?.tone || "Neutral",
+//       issuecategory: rawJSON?.categories?.issueCategory || "unknown",
+//       emotionalstate: rawJSON?.categories?.emotionalState || "Others",
+//       urgency: rawJSON?.categories?.urgency || "Low",
+//       monitoringState: rawJSON?.categories?.monitoringState || "Low",
+//     },
+//   };
+// };
+// Parse response data from raw string
 const parseResponseData = (rawText: string): IResponseData => {
   const rawJSON = JSON.parse(rawText.replace("```json", "").replace("```", ""));
+
+  // Ensure response is always a string
+  let mainContent = "";
+  if (typeof rawJSON?.response === "string") {
+    mainContent = rawJSON.response.trim();
+  } else if (rawJSON?.response?.mainContent) {
+    mainContent = String(rawJSON.response.mainContent).trim();
+  }
 
   return {
     scratchpad: {
       scratchpad_id: uuidv4(),
-      scratchpadText: rawJSON?.scratchpadText?.trim() || "",
+      scratchpadText: (rawJSON?.scratchpadText || "").toString().trim(),
     },
     response: {
-      mainContent: rawJSON?.response?.trim() || "",
-      followup_questions: rawJSON?.followupQuestions,
+      mainContent,
+      followup_questions:
+        rawJSON?.response?.followupQuestions ||
+        rawJSON?.followupQuestions ||
+        [],
     },
     categories: {
       tone: rawJSON?.categories?.tone || "Neutral",
@@ -114,6 +147,7 @@ const parseResponseData = (rawText: string): IResponseData => {
       emotionalstate: rawJSON?.categories?.emotionalState || "Others",
       urgency: rawJSON?.categories?.urgency || "Low",
       monitoringState: rawJSON?.categories?.monitoringState || "Low",
+      notes: rawJSON?.categories?.notes || [],
     },
   };
 };
@@ -329,7 +363,7 @@ const createBotMessage = async (
       if (!currentVectorStoreId)
         throw new Error("Vector store ID is not ready.");
       const message = await openai.responses.create({
-        model: "gpt-4.1-mini",
+        model: "gpt-5",
         instructions: promptTextDoc.prompt,
         input: prompts,
         tools: [

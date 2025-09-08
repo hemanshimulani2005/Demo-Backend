@@ -169,3 +169,75 @@ export const getThreadList = async (
     });
   }
 };
+
+export const getChatHistory = async (
+  req: AuthRequest,
+  res: Response
+): Promise<void> => {
+  const { threadId } = req.params;
+  const userId = req.user?.userId;
+
+  if (!threadId) {
+    res.status(400).json({ error: "Thread ID is required." });
+    return;
+  }
+  if (!userId) {
+    res.status(401).json({ error: "Unauthorized. User not found in token." });
+    return;
+  }
+
+  try {
+    const chat = await Chat.findOne({ thread_id: threadId }).lean();
+
+    if (!chat) {
+      res.status(404).json({ error: "Chat thread not found." });
+      return;
+    }
+
+    // const predefinedConsiderations = [
+    //   "Case Formulation Help",
+    //   "Intervention Strategy",
+    //   "Therapeutic Process Dilemmas",
+    //   "Client Engagement",
+    //   "Ethical Considerations",
+    //   "Cultural & Contextual Sensitivity",
+    //   "Follow-Up Planning",
+    //   "Self-Awareness & Countertransference",
+    //   "Documentation & SuperVision Prep",
+    //   "Special Populations or Modalities",
+    // ];
+
+    const clinicalConsiderationsCount: Record<string, number> = {};
+
+    chat.chats?.forEach((c: any) => {
+      if (c.type === "bot" && c.classification) {
+        c.classification
+          .split(",")
+          .map((cl: string) => cl.trim())
+          .forEach((label: string) => {
+            clinicalConsiderationsCount[label] =
+              (clinicalConsiderationsCount[label] || 0) + 1;
+          });
+      }
+    });
+
+    // predefinedConsiderations.forEach((label) => {
+    //   if (!(label in clinicalConsiderationsCount)) {
+    //     clinicalConsiderationsCount[label] = 0;
+    //   }
+    // });
+
+    res.status(200).json({
+      _id: chat._id,
+      userId: chat.userId,
+      title: chat.title,
+      threadId: chat.thread_id,
+      chats: chat.chats,
+      // clinicalConsiderationsCount,
+      message: "Fetched chat history successfully.",
+    });
+  } catch (err) {
+    console.error("Failed to retrieve chat history:", err);
+    res.status(500).json({ error: "Failed to retrieve chat history." });
+  }
+};

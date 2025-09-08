@@ -32,7 +32,7 @@ app.use(cors(corsOptions));
 // Routes
 app.use("/auth", AuthRoute);
 app.use("/profile", ProfileRoute);
-// app.use("/chat", ChatRoute);
+app.use("/chat", ChatRoute);
 
 // Start server
 const PORT = process.env.PORT || 5000;

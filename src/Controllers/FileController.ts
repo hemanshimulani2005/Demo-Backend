@@ -90,9 +90,9 @@ export const deleteFile = async (req: AuthRequest, res: Response) => {
 
     const { id } = req.params;
 
-    console.log("Received file ID:", id);
+    // console.log("Received file ID:", id);
     // console.log("ID length:", id.length);
-    console.log("User ID:", req.user.userId);
+    // console.log("User ID:", req.user.userId);
 
     // More lenient approach - let MongoDB handle the ObjectId validation
     try {
@@ -105,9 +105,9 @@ export const deleteFile = async (req: AuthRequest, res: Response) => {
         // Try to find the file without userId restriction for debugging
         const fileWithoutUser = await File.findById(id);
         if (fileWithoutUser) {
-          console.log("File exists but belongs to different user");
-          console.log("File userId:", fileWithoutUser.userId);
-          console.log("Request userId:", req.user.userId);
+          // console.log("File exists but belongs to different user");
+          // console.log("File userId:", fileWithoutUser.userId);
+          // console.log("Request userId:", req.user.userId);
           return res.status(403).json({
             message: "Access denied - file belongs to different user",
           });

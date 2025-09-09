@@ -3,7 +3,7 @@ import OpenAI from "openai";
 import mongoose from "mongoose";
 import Chat from "../../models/Chat";
 import User from "../../models/user";
-import { validateCreateTitle } from "../../Validations/ChatValidation";
+import { validateCreateTitle , validateChatRequest, validateVoteRequest} from "../../Validations/ChatValidation";
 import { AuthRequest } from "../../Middleware/AuthMiddleware";
 
 const openai = new OpenAI({
@@ -239,5 +239,88 @@ export const getChatHistory = async (
   } catch (err) {
     console.error("Failed to retrieve chat history:", err);
     res.status(500).json({ error: "Failed to retrieve chat history." });
+  }
+};
+
+
+interface VoteRequestBody {
+  messageId: string;
+  action: "upvote" | "downvote";
+  userId: string;
+}
+
+export const addVote = async (req: AuthRequest, res: Response) => {
+  const { error } = validateVoteRequest(req.body);
+  if (error) {
+    return res.status(400).json({ error: error.details[0].message });
+  }
+
+  const { messageId, action, userId } = req.body;
+
+  if (!["upvote", "downvote"].includes(action)) {
+    return res
+      .status(400)
+      .json({ error: "Action must be either 'upvote' or 'downvote'." });
+  }
+
+  try {
+    // Find chat message
+    let chat;
+
+    if (mongoose.Types.ObjectId.isValid(messageId)) {
+      // If valid ObjectId → search by _id
+      chat = await Chat.findOne({
+        "chats._id": new mongoose.Types.ObjectId(messageId),
+      });
+    } else {
+      // If not valid ObjectId → search by custom ID
+      chat = await Chat.findOne({ "chats.id": messageId });
+    }
+
+    if (!chat) {
+      return res.status(404).json({ error: "Message not found." });
+    }
+
+    // Get chat message object
+     const chatMessage = chat?.chats?.id(messageId) || chat?.chats?.find(m => m.id === messageId);
+
+
+    if (!chatMessage) {
+      return res.status(404).json({ error: "Message not found." });
+    }
+
+    // === Store vote as a string (overwrite previous vote) ===
+    (chatMessage as any).action = action;
+
+    await chat.save();
+
+    await User.findOneAndUpdate(
+      { _id: userId },
+      { $set: { updated_at: new Date() } }
+    );
+
+    // Fake vote details (since only 1 vote stored)
+    const fakeVote = {
+      userId,
+      createdAt: new Date(),
+      action,
+      _id: new mongoose.Types.ObjectId(),
+    };
+
+    const upvoteDetails = action === "upvote" ? [fakeVote] : [];
+    const downvoteDetails = action === "downvote" ? [fakeVote] : [];
+
+    res.status(200).json({
+      message: `${action} successfully recorded.`,
+      messageId,
+      userId,
+      upvotes: upvoteDetails.length,
+      downvotes: downvoteDetails.length,
+      upvoteDetails,
+      downvoteDetails,
+    });
+  } catch (err) {
+    console.error("Error while voting:", err);
+    res.status(500).json({ error: "Failed to vote on message." });
   }
 };

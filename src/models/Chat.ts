@@ -108,7 +108,8 @@ export interface IChat extends Document {
   neutral_count: number;
   cssrs_count: number;
   mode?: string;
-  chats: IChatMessage[];
+  // chats: IChatMessage[];
+  chats: Types.DocumentArray<IChatMessage>;
   depression_severity?: string;
   created_at?: Date;
   updated_at?: Date;
@@ -154,20 +155,20 @@ const ChatSchema = new Schema<IChat>(
         //   emotional_state: { type: String },
         //   issueCategory: { type: String },
         // },
-        upvotes: [
-          {
-            userId: { type: String, ref: "User" },
-            createdAt: { type: Date, default: Date.now },
-            action: { type: String },
-          },
-        ],
-        downvotes: [
-          {
-            userId: { type: String, ref: "User" },
-            createdAt: { type: Date, default: Date.now },
-            action: { type: String },
-          },
-        ],
+        // upvotes: [
+        //   {
+        //     userId: { type: String, ref: "User" },
+        //     createdAt: { type: Date, default: Date.now },
+        //     action: { type: String },
+        //   },
+        // ],
+        // downvotes: [
+        //   {
+        //     userId: { type: String, ref: "User" },
+        //     createdAt: { type: Date, default: Date.now },
+        //     action: { type: String },
+        //   },
+        // ],
         feedback: [
           {
             userId: { type: String, ref: "User" },

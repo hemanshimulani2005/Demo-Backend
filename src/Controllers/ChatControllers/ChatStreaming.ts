@@ -349,7 +349,7 @@ export const chatStreaming = async (req: AuthRequest, res: Response) => {
     if (!users || !chat)
       return res.status(400).json({ error: "Invalid user ID or thread ID." });
 
-    // ✅ Determine the question to use
+    //  Determine the question to use
     let questionToAsk: string | undefined;
     let userMessage: any = null;
 
@@ -360,7 +360,7 @@ export const chatStreaming = async (req: AuthRequest, res: Response) => {
           .json({ error: "Bot ID is required for regenerate." });
       }
 
-      // 🔄 Find the bot message by botId
+      //  Find the bot message by botId
       const botMessageIndex = chat.chats.findIndex(
         (c) => c.type === "bot" && c._id.toString() === botId
       );
@@ -371,7 +371,7 @@ export const chatStreaming = async (req: AuthRequest, res: Response) => {
           .json({ error: "Bot message not found for regenerate." });
       }
 
-      // 🔄 Find the user question that comes right before this bot message
+      // Find the user question that comes right before this bot message
       let userQuestion = null;
       for (let i = botMessageIndex - 1; i >= 0; i--) {
         if (chat.chats[i].type === "user") {
@@ -387,10 +387,10 @@ export const chatStreaming = async (req: AuthRequest, res: Response) => {
       }
 
       questionToAsk = userQuestion.message;
-      console.log("🔄 Regenerating bot message with ID:", botId);
-      console.log("🔄 Using previous question:", questionToAsk);
+      // console.log("🔄 Regenerating bot message with ID:", botId);
+      // console.log("🔄 Using previous question:", questionToAsk);
     } else {
-      // 🆕 take new question from request body
+      //  take new question from request body
       questionToAsk = question;
       if (!questionToAsk) {
         return res.status(400).json({ error: "Question is required." });
@@ -403,10 +403,10 @@ export const chatStreaming = async (req: AuthRequest, res: Response) => {
         created_at: new Date(),
         updated_at: new Date(),
       };
-      console.log("🆕 New question from request:", questionToAsk);
+      // console.log("🆕 New question from request:", questionToAsk);
     }
 
-    // ✅ Prepare conversation history
+    // Prepare conversation history
     const filteredChats = chat.chats
       .flatMap((chatItem) =>
         chatItem.type === "user" || chatItem.type === "bot"
@@ -485,7 +485,7 @@ export const chatStreaming = async (req: AuthRequest, res: Response) => {
             (event?.response?.output[0]?.content[0]?.text as string) || "";
           const responseData = parseResponseData(completedText);
 
-          // ✅ Bot message ID logic
+          //  Bot message ID logic
           let message_id: mongoose.Types.ObjectId;
           if (regenerate && botId) {
             message_id = new mongoose.Types.ObjectId(botId);
@@ -503,7 +503,7 @@ export const chatStreaming = async (req: AuthRequest, res: Response) => {
           };
 
           if (regenerate && botId) {
-            // 🔄 Update existing bot message
+            // Update existing bot message
             const index = chat.chats.findIndex(
               (m) => m.type === "bot" && m._id.toString() === botId
             );

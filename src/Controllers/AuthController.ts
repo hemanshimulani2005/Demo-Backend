@@ -197,7 +197,7 @@ export const googleSignIn = async (
         : String(user._id);
 
     const token = jwt.sign(
-      { email: email },
+      { userId, email },
       process.env.JWT_SECRET || "your_jwt_secret",
       { expiresIn: "1h" }
     );

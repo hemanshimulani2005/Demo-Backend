@@ -3,7 +3,11 @@ import OpenAI from "openai";
 import mongoose from "mongoose";
 import Chat from "../../models/Chat";
 import User from "../../models/user";
-import { validateCreateTitle , validateChatRequest, validateVoteRequest} from "../../Validations/ChatValidation";
+import {
+  validateCreateTitle,
+  validateChatRequest,
+  validateVoteRequest,
+} from "../../Validations/ChatValidation";
 import { AuthRequest } from "../../Middleware/AuthMiddleware";
 
 const openai = new OpenAI({
@@ -194,19 +198,6 @@ export const getChatHistory = async (
       return;
     }
 
-    // const predefinedConsiderations = [
-    //   "Case Formulation Help",
-    //   "Intervention Strategy",
-    //   "Therapeutic Process Dilemmas",
-    //   "Client Engagement",
-    //   "Ethical Considerations",
-    //   "Cultural & Contextual Sensitivity",
-    //   "Follow-Up Planning",
-    //   "Self-Awareness & Countertransference",
-    //   "Documentation & SuperVision Prep",
-    //   "Special Populations or Modalities",
-    // ];
-
     const clinicalConsiderationsCount: Record<string, number> = {};
 
     chat.chats?.forEach((c: any) => {
@@ -221,19 +212,12 @@ export const getChatHistory = async (
       }
     });
 
-    // predefinedConsiderations.forEach((label) => {
-    //   if (!(label in clinicalConsiderationsCount)) {
-    //     clinicalConsiderationsCount[label] = 0;
-    //   }
-    // });
-
     res.status(200).json({
       _id: chat._id,
       userId: chat.userId,
       title: chat.title,
       threadId: chat.thread_id,
       chats: chat.chats,
-      // clinicalConsiderationsCount,
       message: "Fetched chat history successfully.",
     });
   } catch (err) {
@@ -241,7 +225,6 @@ export const getChatHistory = async (
     res.status(500).json({ error: "Failed to retrieve chat history." });
   }
 };
-
 
 interface VoteRequestBody {
   messageId: string;
@@ -282,8 +265,9 @@ export const addVote = async (req: AuthRequest, res: Response) => {
     }
 
     // Get chat message object
-     const chatMessage = chat?.chats?.id(messageId) || chat?.chats?.find(m => m.id === messageId);
-
+    const chatMessage =
+      chat?.chats?.id(messageId) ||
+      chat?.chats?.find((m) => m.id === messageId);
 
     if (!chatMessage) {
       return res.status(404).json({ error: "Message not found." });

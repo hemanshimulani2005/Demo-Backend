@@ -184,6 +184,7 @@ export const googleSignIn = async (
         // last_name: name?.split(" ")[1] || "",
         // profile_avtar: picture,
         password: null, // Google users won’t have password
+        authProvider: "google",
       });
       await user.save();
       isNewUser = true;

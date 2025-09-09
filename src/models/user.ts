@@ -14,11 +14,18 @@ export interface IUser extends Document {
   avatarType?: string; // URL or path to profile picture
   resetCode?: string;
   resetCodeExpiry?: number;
+  authProvider: "local" | "google"; // <-- added
 }
 
 const userSchema = new Schema<IUser>({
   email: { type: String, required: true, unique: true },
-  password: { type: String, required: true },
+  // password: { type: String, required: true },
+  password: {
+    type: String,
+    required: function () {
+      return this.authProvider === "local"; // only local users need password
+    },
+  },
   firstName: { type: String },
   lastName: { type: String },
   phone: { type: String },
@@ -30,6 +37,12 @@ const userSchema = new Schema<IUser>({
   avatarType: { type: String },
   resetCode: { type: String },
   resetCodeExpiry: { type: Number },
+
+  authProvider: {
+    type: String,
+    enum: ["local", "google"],
+    default: "local",
+  },
 });
 
 const User = mongoose.model<IUser>("User", userSchema);
